@@ -1,0 +1,924 @@
+/* ==========================================================================
+   HızlıOku Pro - Modern, Zen Odaklı ve Mobil Yatay (Landscape) Uyumlu Tasarım
+   ========================================================================== */
+
+:root {
+  --bg-app: #090b10;
+  --bg-surface: #121621;
+  --bg-surface-elevated: #1a2030;
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-focus: rgba(250, 204, 21, 0.45);
+  --text-primary: #f3f4f6;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --accent-primary: #facc15;
+  --accent-hover: #fde047;
+  --accent-orp: #ef4444;
+  --accent-heading: #38bdf8;
+  --accent-footnote: #a78bfa;
+  --accent-success: #22c55e;
+  --reader-bg: #000000;
+  --reader-fg: #ffff00;
+  --reader-width: 750px;
+  --reader-height: 500px;
+  --reader-font-size: 32px;
+  --radius-lg: 14px;
+  --radius-md: 10px;
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.65);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100dvh;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
+  user-select: none;
+}
+
+/* Zen Modu: Okuma aktifken dikkat dağıtan barları yumuşakça karart */
+body.is-reading .zen-fade {
+  opacity: 0.16;
+  transition: opacity 0.45s ease;
+}
+
+body.is-reading .zen-fade:hover,
+body.is-reading .zen-fade:focus-within {
+  opacity: 1;
+}
+
+/* Ana Uygulama İskeleti */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100dvh;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 12px 18px;
+  gap: 12px;
+}
+
+/* Üst Bilgi ve Araç Çubuğu */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  flex-wrap: wrap;
+}
+
+.brand-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+  color: var(--accent-primary);
+  white-space: nowrap;
+}
+
+.doc-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 11px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  max-width: 340px;
+}
+
+.doc-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.smart-stats-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--accent-heading);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.smart-stats-pill:hover {
+  background: rgba(56, 189, 248, 0.22);
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Buton Stilleri */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 13px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: #242c42;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--accent-primary);
+  color: #090b10;
+  border-color: var(--accent-primary);
+  font-weight: 700;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn-accent-outline {
+  border-color: rgba(250, 204, 21, 0.45);
+  color: var(--accent-primary);
+}
+
+.kbd-hint {
+  display: inline-block;
+  padding: 1px 5px;
+  font-size: 0.7rem;
+  font-family: monospace;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  color: var(--text-secondary);
+}
+
+/* Bildirim / Kaldığın Yerden Devam Et & OCR Durum Çubuğu */
+.banner-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-size: 0.86rem;
+  animation: fadeInDown 0.25s ease;
+}
+
+.status-banner.resume-banner {
+  background: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #dcfce7;
+}
+
+.status-banner.ocr-banner {
+  background: rgba(250, 204, 21, 0.12);
+  border: 1px solid rgba(250, 204, 21, 0.4);
+  color: #fef08a;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Orta Sahne & RSVP Okuma Penceresi */
+.stage-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  position: relative;
+}
+
+.reader-window {
+  position: relative;
+  width: min(100%, var(--reader-width));
+  height: min(56dvh, var(--reader-height));
+  min-height: 210px;
+  background-color: var(--reader-bg);
+  color: var(--reader-fg);
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 32px;
+  overflow: hidden;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Başlık Gösterim Durumu: Özel Çerçeve ve Rozet */
+.reader-window.mode-heading {
+  border-color: var(--accent-heading);
+  box-shadow: 0 0 36px rgba(56, 189, 248, 0.28), var(--shadow-lg);
+}
+
+/* Dipnot Gösterim Durumu: Özel Çerçeve ve Rozet */
+.reader-window.mode-footnote {
+  border-color: var(--accent-footnote);
+  box-shadow: 0 0 36px rgba(167, 139, 250, 0.28), var(--shadow-lg);
+}
+
+/* ORP Reticle (Göz Odak Çizgileri) */
+.orp-reticle-top,
+.orp-reticle-bottom {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 14px;
+  background: rgba(239, 68, 68, 0.55);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.orp-reticle-top {
+  top: 14px;
+}
+
+.orp-reticle-bottom {
+  bottom: 14px;
+}
+
+.reader-window.show-reticle .orp-reticle-top,
+.reader-window.show-reticle .orp-reticle-bottom {
+  opacity: 1;
+}
+
+/* Pencere Üst Bilgi Rozeti (Başlık / Dipnot / Sayfa Göstergesi) */
+.reader-mode-pill {
+  position: absolute;
+  top: 14px;
+  left: 18px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.reader-mode-pill.pill-heading {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.5);
+}
+
+.reader-mode-pill.pill-footnote {
+  background: rgba(167, 139, 250, 0.22);
+  color: #c4b5fd;
+  border: 1px solid rgba(167, 139, 250, 0.55);
+}
+
+.reader-page-corner {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  font-size: 0.75rem;
+  font-family: monospace;
+  color: rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* Ana Kelime / Öbek Gösterim Alanı */
+.word-display {
+  width: 100%;
+  font-size: var(--reader-font-size);
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  z-index: 3;
+  pointer-events: none;
+  word-break: break-word;
+}
+
+.word-display.align-center {
+  text-align: center;
+}
+
+.word-display.align-left {
+  text-align: left;
+}
+
+.word-display.align-right {
+  text-align: right;
+}
+
+/* ORP (Optimal Recognition Point) Sabit Odak Hizalaması */
+.word-display.align-orp {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: baseline;
+  width: 100%;
+}
+
+.orp-prefix {
+  text-align: right;
+  white-space: pre;
+}
+
+.orp-pivot {
+  color: var(--accent-orp);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+
+.orp-suffix {
+  text-align: left;
+  white-space: pre;
+}
+
+/* Başlık Çerçevesi Stili */
+.word-display.is-heading-display {
+  padding: 16px 24px;
+  border: 2px solid var(--accent-heading);
+  background: rgba(56, 189, 248, 0.1);
+  border-radius: var(--radius-md);
+  color: #e0f2fe;
+  text-align: center;
+  max-width: 90%;
+}
+
+/* Dipnot Alt Bilgi Şeridi (Dipnot okunurken tam metni altta da hafifçe gösterir) */
+.footnote-live-bar {
+  position: absolute;
+  bottom: 14px;
+  left: 20px;
+  right: 20px;
+  padding: 8px 14px;
+  background: rgba(167, 139, 250, 0.14);
+  border: 1px solid rgba(167, 139, 250, 0.4);
+  border-radius: 8px;
+  color: #ddd6fe;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  text-align: center;
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* Mobil ve Dokunmatik Bölgeler (Sol %25: Geri, Orta %50: Oku/Duraklat, Sağ %25: İleri) */
+.touch-zones {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  z-index: 2;
+}
+
+.touch-zone {
+  height: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 10px;
+  font-size: 0.72rem;
+  color: transparent;
+  transition: background 0.15s ease, color 0.2s ease;
+}
+
+.touch-zone:active {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Context Peek (Duraklatıldığında Cümlenin Tamamını Gösteren Panel) */
+.context-peek-panel {
+  width: min(100%, var(--reader-width));
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.context-peek-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.context-peek-body {
+  font-size: 0.93rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  max-height: 105px;
+  overflow-y: auto;
+  user-select: text;
+}
+
+.context-word {
+  display: inline-block;
+  padding: 1px 4px;
+  margin: 0 1px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.context-word:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.context-word.active-chunk-word {
+  background: var(--accent-primary);
+  color: #090b10;
+  font-weight: 700;
+}
+
+.context-word.heading-word {
+  color: var(--accent-heading);
+  font-weight: 700;
+}
+
+.context-word.footnote-word {
+  color: var(--accent-footnote);
+  font-style: italic;
+}
+
+/* Alt Kontrol, İlerleme Çubuğu ve Mobil Tuş Takımı */
+.bottom-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+}
+
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-slider {
+  flex: 1;
+  accent-color: var(--accent-primary);
+  height: 6px;
+  cursor: pointer;
+}
+
+.progress-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8rem;
+  font-family: monospace;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Mobil ve Masaüstü Tıklanabilir Kontrol Butonları */
+.controls-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.transport-group,
+.speed-group,
+.utility-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-control {
+  min-height: 40px;
+  padding: 8px 14px;
+  font-size: 0.86rem;
+}
+
+.btn-play-main {
+  min-width: 132px;
+  min-height: 42px;
+  font-size: 0.95rem;
+}
+
+.wpm-badge {
+  display: flex;
+   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  min-width: 88px;
+}
+
+.wpm-value {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: var(--accent-primary);
+  font-family: monospace;
+}
+
+.wpm-label {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+/* Klavye Kısayolları Şeridi (İstenen Birebir Format) */
+.shortcuts-bar {
+  text-align: center;
+  font-size: 0.77rem;
+  color: var(--text-secondary);
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  line-height: 1.5;
+}
+
+.shortcuts-bar strong {
+  color: var(--text-primary);
+}
+
+.shortcut-item {
+  display: inline-block;
+  margin: 0 8px;
+}
+
+/* ==========================================================================
+   Modallar (Settings - AccelaReader Görseli Uyumlu, Yeni Metin/PDF, Ayraçlar)
+   ========================================================================== */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+}
+
+.modal-card {
+  width: min(100%, 660px);
+  max-height: 92dvh;
+  background: var(--bg-surface);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* AccelaReader Settings Görseline Sadık & Modernize Edilmiş Ayarlar Penceresi */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--bg-surface-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.modal-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 18px 22px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  gap: 10px 16px;
+  align-items: center;
+}
+
+.settings-form-grid label {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.input-field,
+.select-field {
+  width: 100%;
+  padding: 7px 10px;
+  background: #0c0f17;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.color-picker-input {
+  width: 48px;
+  height: 34px;
+  padding: 2px;
+  background: #0c0f17;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.theme-presets-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.theme-chip {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.87rem;
+  line-height: 1.4;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.checkbox-row input[type='checkbox'] {
+  margin-top: 3px;
+  width: 17px;
+  height: 17px;
+  accent-color: #2563eb;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.checkbox-subtext {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* Ayarlar Canlı Önizleme Kutusu */
+.settings-live-preview {
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  text-align: center;
+  font-weight: 700;
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 14px 20px;
+  background: var(--bg-surface-elevated);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Yeni Metin ve PDF / OCR Yükleme Alanı */
+.upload-dropzone {
+  border: 2px dashed rgba(250, 204, 21, 0.45);
+  background: rgba(250, 204, 21, 0.04);
+  border-radius: var(--radius-lg);
+  padding: 22px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.upload-dropzone:hover,
+.upload-dropzone.drag-over {
+  background: rgba(250, 204, 21, 0.11);
+  border-color: var(--accent-primary);
+}
+
+.textarea-content {
+  width: 100%;
+  min-height: 170px;
+  padding: 12px;
+  background: #0c0f17;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+/* Ayraçlar ve Son Okunan Kitaplar Listesi */
+.list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.list-item-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.list-item-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.list-item-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list-item-meta {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+   CEP TELEFONU YATAY MOD (LANDSCAPE) VE MOBİL OPTİMİZASYONU
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .kbd-hint,
+  .shortcuts-bar {
+    display: none;
+  }
+
+  .reader-window {
+    width: 100%;
+    height: 44dvh;
+    padding: 16px 18px;
+  }
+
+  .controls-grid {
+    justify-content: center;
+  }
+
+  .settings-form-grid {
+    grid-template-columns: 1fr 120px;
+  }
+}
+
+/* Telefonu Yan Tuttuğunda (Landscape) Tam Ekran Ergonomik Görünüm */
+@media (max-height: 540px) and (orientation: landscape) {
+  .app-container {
+    padding: 6px 12px;
+    gap: 6px;
+  }
+
+  .top-bar {
+    padding: 6px 12px;
+  }
+
+  .shortcuts-bar {
+    display: none;
+  }
+
+  .reader-window {
+    width: 100%;
+    height: 54dvh;
+    min-height: 145px;
+    padding: 12px 24px;
+  }
+
+  .context-peek-panel {
+    padding: 6px 12px;
+  }
+
+  .context-peek-body {
+    max-height: 48px;
+    font-size: 0.82rem;
+  }
+
+  .bottom-deck {
+    padding: 6px 12px;
+    gap: 6px;
+  }
+
+  .btn-control {
+    min-height: 34px;
+    padding: 5px 10px;
+    font-size: 0.8rem;
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

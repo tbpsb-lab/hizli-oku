@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#090b10" />
+  <title>HızlıOku Pro — Akıllı RSVP, PDF & OCR Hızlı Okuma</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <!-- PDF.js & Tesseract.js (100% Tarayıcı İçi PDF ve OCR Motorları) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- ÜST ARAÇ ÇUBUĞU -->
+    <header class="top-bar zen-fade">
+      <div class="brand-group">
+        <div class="brand-logo" title="HızlıOku Pro - Akıllı RSVP Okuyucu">
+          <span>⚡</span>
+          <span>HızlıOku Pro</span>
+        </div>
+        <div class="doc-badge" id="docBadge">
+          <span>📘</span>
+          <span class="doc-title-text" id="docTitleText">Örnek Kitap Bölümü</span>
+        </div>
+        <button class="smart-stats-pill" id="btnSmartStats" title="Atlanan Künye/Kaynakça sayfalarını, tespit edilen başlıkları ve dipnotları gör">
+          <span>🧠</span>
+          <span id="smartStatsText">Kitap Zekası Aktif</span>
+        </button>
+      </div>
+
+      <div class="top-actions">
+        <button class="btn" id="btnNewText" title="Yeni Metin Yapıştır veya PDF Yükle (Kısayol: n)">
+          <span>📄 Yeni Metin / PDF</span>
+          <span class="kbd-hint">n</span>
+        </button>
+        <button class="btn btn-accent-outline" id="btnQuickBookmark" title="Bulunduğun Yere Ayraç Koy (Kısayol: b)">
+          <span>🔖 Ayraç Koy</span>
+          <span class="kbd-hint">b</span>
+        </button>
+        <button class="btn" id="btnOpenBookmarks" title="Ayraçlarım ve Son Okunan PDF/Metinler">
+          <span>📑 Ayraçlar & Hafıza</span>
+          <span id="bookmarkCountBadge" class="kbd-hint">0</span>
+        </button>
+        <button class="btn" id="btnSettings" title="Okuma Ayarları (Kısayol: s)">
+          <span>⚙ Ayarlar</span>
+          <span class="kbd-hint">s</span>
+        </button>
+        <button class="btn" id="btnFullscreen" title="Tam Ekran / Mobil Yatay Okuma Modu">
+          <span>⛶</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- BİLDİRİM VE HAFIZA / OCR DURUM ÇUBUKLARI -->
+    <div class="banner-area" id="bannerArea">
+      <!-- Hafıza / Ayraç Bildirimi -->
+      <div class="status-banner resume-banner hidden" id="resumeBanner">
+        <div id="resumeBannerText">
+          Bu belgede daha önce kaldığınız yer bulundu.
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="btn btn-primary" id="btnResumeJump" style="padding: 5px 12px; font-size: 0.8rem;">
+            Kaldığım Yere Git
+          </button>
+          <button class="btn" id="btnResumeDismiss" style="padding: 5px 10px; font-size: 0.8rem;">
+            Kapat
+          </button>
+        </div>
+      </div>
+
+      <!-- OCR / PDF Tarama İlerleme Çubuğu -->
+      <div class="status-banner ocr-banner hidden" id="ocrBanner">
+        <div id="ocrBannerText">
+          ⏳ PDF analiz ediliyor...
+        </div>
+        <button class="btn" id="btnCancelOcr" style="padding: 4px 10px; font-size: 0.78rem;">
+          Durdur
+        </button>
+      </div>
+    </div>
+
+    <!-- ORTA SAHNE: RSVP OKUMA PENCERESİ VE DURAKLATINCA CÜMLE GÖSTERİMİ (CONTEXT PEEK) -->
+    <main class="stage-wrapper">
+      <div class="reader-window" id="readerWindow">
+        <!-- ORP Odak Çizgileri -->
+        <div class="orp-reticle-top" id="orpReticleTop"></div>
+        <div class="orp-reticle-bottom" id="orpReticleBottom"></div>
+
+        <!-- Başlık veya Dipnot Mod Rozeti -->
+        <div class="reader-mode-pill hidden" id="readerModePill"></div>
+
+        <!-- Sayfa ve Öbek Köşe Bilgisi -->
+        <div class="reader-page-corner" id="readerPageCorner">Sayfa 1</div>
+
+        <!-- Kelime / Öbek Gösterimi -->
+        <div class="word-display align-center" id="wordDisplay">
+          Hazır
+        </div>
+
+        <!-- Dipnot Aktifken Tam Dipnot Metni Alt Şeridi -->
+        <div class="footnote-live-bar hidden" id="footnoteLiveBar"></div>
+
+        <!-- Mobil / Dokunmatik 3 Bölgeli Yüzey (Sol: Geri, Orta: Oku/Durdur, Sağ: İleri) -->
+        <div class="touch-zones" id="touchZones">
+          <div class="touch-zone" id="touchZoneLeft" title="Geri Kaydır (←)">
+            <span>◀ Geri</span>
+          </div>
+          <div class="touch-zone" id="touchZoneCenter" title="Oku / Duraklat (Space)">
+            <span>⏯ Oku / Duraklat</span>
+          </div>
+          <div class="touch-zone" id="touchZoneRight" title="İleri Kaydır (→)">
+            <span>İleri ▶</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTEXT PEEK: Duraklatıldığında İçinde Bulunulan Cümleyi/Paragrafı Gösterir -->
+      <section class="context-peek-panel zen-fade" id="contextPeekPanel">
+        <div class="context-peek-header">
+          <span id="contextPeekTitle">🔍 Bağlam Görünümü (Duraklatıldığında Cümleyi Gösterir — Kelimeye Tıklayarak Atlayabilirsiniz)</span>
+          <span id="contextStepInfo">Kaydırma Adımı: 3 kelime</span>
+        </div>
+        <div class="context-peek-body" id="contextPeekBody"></div>
+      </section>
+    </main>
+
+    <!-- ALT KONTROL PANELİ (MOBİL VE MASAÜSTÜ UYUMLU) -->
+    <footer class="bottom-deck zen-fade">
+      <!-- İlerleme Çubuğu ve Süre Bilgisi -->
+      <div class="progress-row">
+        <input
+          type="range"
+          id="progressSlider"
+          class="progress-slider"
+          min="0"
+          max="100"
+          value="0"
+          title="Okuma konumunu kaydır"
+        />
+        <div class="progress-stats">
+          <span id="wordCounterText">0 / 0</span>
+          <span id="percentText">%0</span>
+          <span id="remainingTimeText">Kalan: 0:00</span>
+        </div>
+      </div>
+
+      <!-- Tıklanabilir Butonlar (Mobil Yatay Mod ve Masaüstü İçin) -->
+      <div class="controls-grid">
+        <div class="transport-group">
+          <button class="btn btn-control" id="btnRestart" title="Başa Sar (r)">
+            <span>⏮ Başa</span>
+            <span class="kbd-hint">r</span>
+          </button>
+          <button class="btn btn-control" id="btnStepBack" title="1 Öbek Geri Kaydır (←)">
+            <span id="btnStepBackLabel">⏪ -3 Kelime</span>
+            <span class="kbd-hint">←</span>
+          </button>
+          <button class="btn btn-primary btn-control btn-play-main" id="btnPlayPause" title="Oku / Duraklat (Space)">
+            <span id="btnPlayPauseIcon">▶</span>
+            <span id="btnPlayPauseText">OKU</span>
+          </button>
+          <button class="btn btn-control" id="btnStepForward" title="1 Öbek İleri Kaydır (→)">
+            <span id="btnStepForwardLabel">+3 Kelime ⏩</span>
+            <span class="kbd-hint">→</span>
+          </button>
+        </div>
+
+        <div class="speed-group">
+          <button class="btn btn-control" id="btnWpmDown" title="Hızı 25 WPM Azalt (↓)">
+            <span>−25</span>
+            <span class="kbd-hint">↓</span>
+          </button>
+          <div class="wpm-badge" title="Dakikadaki Kelime Hızı (Words Per Minute)">
+            <span class="wpm-value" id="wpmDisplayValue">325</span>
+            <span class="wpm-label">WPM</span>
+          </div>
+          <button class="btn btn-control" id="btnWpmUp" title="Hızı 25 WPM Artır (↑)">
+            <span>+25</span>
+            <span class="kbd-hint">↑</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- İstenen Klavye Kısayolları Şeridi -->
+      <div class="shortcuts-bar">
+        <strong>Keyboard shortcuts:</strong>
+        <span class="shortcut-item"><strong>r</strong> - restart</span>
+        <span class="shortcut-item"><strong>space</strong> - read/pause</span>
+        <span class="shortcut-item"><strong>n</strong> - new text</span>
+        <span class="shortcut-item"><strong>s</strong> - settings</span>
+        <span class="shortcut-item">use <strong>← →</strong> to skip back or ahead</span>
+        <span class="shortcut-item">use <strong>↑ ↓</strong> to increase or decrease wpm x25</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 1: SETTINGS (Yüklediğiniz Görseldeki Ayarlar + Akıllı Kitap Ayarları)
+       ======================================================================== -->
+  <div class="modal-backdrop hidden" id="settingsModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-title">⚙ Okuma ve Görünüm Ayarları (Settings)</span>
+        <button class="btn" id="btnCloseSettingsTop" style="padding: 4px 10px;">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- Hazır Renk Temaları -->
+        <div class="theme-presets-row">
+          <span style="font-size: 0.8rem; color: var(--text-secondary);">Hazır Temalar:</span>
+          <button type="button" class="theme-chip" data-bg="#000000" data-fg="#ffff00" style="background:#000; color:#ffff00;">
+            Accela Klasik (Sarı/Siyah)
+          </button>
+          <button type="button" class="theme-chip" data-bg="#000000" data-fg="#ffffff" style="background:#000; color:#fff;">
+            OLED Gece (Beyaz/Siyah)
+          </button>
+          <button type="button" class="theme-chip" data-bg="#f5ecd7" data-fg="#2b2118" style="background:#f5ecd7; color:#2b2118;">
+            Kitap Kağıdı (Sepia)
+          </button>
+          <button type="button" class="theme-chip" data-bg="#0f172a" data-fg="#38bdf8" style="background:#0f172a; color:#38bdf8;">
+            Gece Mavisi
+          </button>
+        </div>
+
+        <!-- Görseldeki Form Alanları -->
+        <div class="settings-form-grid">
+          <label for="setWpm">words per minute (wpm)</label>
+          <input type="number" id="setWpm" class="input-field" min="50" max="2000" step="25" value="325" />
+
+          <label for="setChunkSize">chunk size (words)</label>
+          <input type="number" id="setChunkSize" class="input-field" min="1" max="10" step="1" value="3" />
+
+          <label for="setWindowWidth">window width (px)</label>
+          <input type="number" id="setWindowWidth" class="input-field" min="300" max="1600" step="25" value="750" />
+
+          <label for="setWindowHeight">window height (px)</label>
+          <input type="number" id="setWindowHeight" class="input-field" min="200" max="1000" step="25" value="500" />
+
+          <label for="setFontSize">font size</label>
+          <input type="number" id="setFontSize" class="input-field" min="14" max="96" step="2" value="32" />
+
+          <label for="setFontColor">font color</label>
+          <input type="color" id="setFontColor" class="color-picker-input" value="#ffff00" />
+
+          <label for="setBgColor">background color</label>
+          <input type="color" id="setBgColor" class="color-picker-input" value="#000000" />
+
+          <label for="setAlignment">alignment</label>
+          <select id="setAlignment" class="select-field">
+            <option value="center">center</option>
+            <option value="orp">orp (kırmızı odak harfi - 1 kelime için)</option>
+            <option value="left">left</option>
+            <option value="right">right</option>
+          </select>
+        </div>
+
+        <!-- Canlı Önizleme Kutusu -->
+        <div class="settings-live-preview" id="settingsLivePreview">
+          Canlı Önizleme Metni
+        </div>
+
+        <!-- Görseldeki 4 Onay Kutusu + Kitap Zekası Onay Kutuları -->
+        <div class="checkbox-list">
+          <label class="checkbox-row">
+            <input type="checkbox" id="setSpeedVariability" checked />
+            <span>
+              Speed variability : slow down for larger chunks and speed up for smaller chunks so average wpm stays the same
+              <span class="checkbox-subtext">Uzun kelimelerde yavaşlar, kısa kelimelerde hızlanır; ortalama WPM hızı sabit kalır.</span>
+            </span>
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="setSentenceBreak" checked />
+            <span>
+              Start new chunk at end of sentences and paragraphs
+              <span class="checkbox-subtext">Cümle ve paragraf sonlarında farklı cümleleri aynı öbekte birleştirmez, yeni öbeğe geçer.</span>
+            </span>
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="setSentencePause" checked />
+            <span>
+              Slight pause at end of sentences and paragraphs
+              <span class="checkbox-subtext">Nokta, virgül ve paragraf sonlarında anlamayı güçlendiren doğal duraksama ekler.</span>
+            </span>
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="setSkipStopwords" />
+            <span>
+              Skip over "stopwords" which convey no additional meaning to the sentence (i.e. 'the', 'an', 'bir', 've', etc)
+              <span class="checkbox-subtext">Cümleye ek anlam katmayan bağlaç/edatları atlayarak tarama hızını artırır.</span>
+            </span>
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="setDetectHeadings" checked />
+            <span>
+              <strong>Başlıkları Tanı ve Bekle:</strong> Bölüm başlıklarını özel çerçeve içinde göster ve başlıkta daha uzun bekle.
+            </span>
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="setInlineFootnotes" checked />
+            <span>
+              <strong>Akıllı Dipnot Okuma:</strong> Dipnotları (¹, [1], *, †) metin içinde yeri geldiğinde sırayla oku ve kaldığın cümleye dön.
+            </span>
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="setSkipBoilerplate" checked />
+            <span>
+              <strong>Gereksiz Sayfaları Atla:</strong> Kitap künyesi (ISBN, yayınevi, basım yeri), içindekiler, sayfa numaraları ve kaynakçayı otomatik filtrele.
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="btnSaveSettings" style="min-width: 110px;">SAVE</button>
+        <button class="btn" id="btnCloseSettings" style="min-width: 110px;">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 2: YENİ METİN YAPIŞTIR VEYA PDF / TARANMIŞ PDF (OCR) YÜKLE (n)
+       ======================================================================== -->
+  <div class="modal-backdrop hidden" id="newTextModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-title">📄 Metin Yapıştır veya PDF / Taranmış Kitap Yükle</span>
+        <button class="btn" id="btnCloseNewText" style="padding: 4px 10px;">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- PDF Dosya Yükleme Alanı -->
+        <div class="upload-dropzone" id="pdfDropzone">
+          <input type="file" id="pdfFileInput" accept=".pdf,application/pdf" class="hidden" />
+          <div style="font-size: 1.8rem; margin-bottom: 6px;">📕 ➔ ⚡</div>
+          <div style="font-weight: 700; font-size: 0.96rem; color: var(--accent-primary);">
+            PDF Dosyası Seçmek İçin Tıklayın veya Buraya Sürükleyin
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">
+            Dijital PDF'ler anında açılır. Taranmış (fotoğraf) PDF'ler <strong>Tesseract.js OCR</strong> ile tarayıcıda metne dönüştürülür. Aynı PDF'i yarın yüklediğinizde kaldığınız yeri otomatik hatırlar!
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <label class="checkbox-row" style="font-size: 0.82rem;">
+            <input type="checkbox" id="chkForceOcr" />
+            <span>Taranmış PDF için OCR'ı zorla (Bozuk fontlu PDF'ler için)</span>
+          </label>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 0.8rem; color: var(--text-secondary);">Hazır Test Metinleri:</span>
+            <button type="button" class="btn" id="btnLoadSampleBook" style="padding: 4px 10px; font-size: 0.78rem;">
+              📚 Künyeli + Başlıklı + Dipnotlu Kitap Örneği
+            </button>
+          </div>
+        </div>
+
+        <!-- Metin Kopyala-Yapıştır Alanı -->
+        <div>
+          <label for="pasteTitleInput" style="font-size: 0.82rem; color: var(--text-secondary); display:block; margin-bottom:4px;">
+            Metin Başlığı (Hafızada hatırlamak için opsiyonel):
+          </label>
+          <input
+            type="text"
+            id="pasteTitleInput"
+            class="input-field"
+            placeholder="Örn: Bilim Tarihi Makalesi"
+            style="margin-bottom: 10px;"
+          />
+          <label for="pasteTextarea" style="font-size: 0.82rem; color: var(--text-secondary); display:block; margin-bottom:4px;">
+            Okumak İstediğiniz Metni Buraya Yapıştırın:
+          </label>
+          <textarea
+            id="pasteTextarea"
+            class="textarea-content"
+            placeholder="Metninizi buraya yapıştırın... Başlıklar, dipnotlar (¹, [1], *) ve paragraflar otomatik tanınır."
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="btnApplyNewText" style="min-width: 150px;">
+          ⚡ Metni Aktar ve Oku
+        </button>
+        <button class="btn" id="btnCancelNewText">İptal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 3: AYRAÇLARIM (BOOKMARKS) VE HAFIZADAKİ BELGELER
+       ======================================================================== -->
+  <div class="modal-backdrop hidden" id="bookmarksModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-title">📑 Ayraçlarım ve Hafızadaki Kitaplar / PDF'ler</span>
+        <button class="btn" id="btnCloseBookmarks" style="padding: 4px 10px;">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- Yeni Ayraç Ekleme -->
+        <div style="display: flex; gap: 8px;">
+          <input
+            type="text"
+            id="bookmarkNoteInput"
+            class="input-field"
+            placeholder="Bulunduğunuz noktaya ayraç notu (Örn: Bölüm 2 Önemli Tanım)"
+          />
+          <button class="btn btn-primary" id="btnAddNamedBookmark">
+            🔖 Ayraç Ekle
+          </button>
+        </div>
+
+        <!-- Mevcut Kitaptaki Ayraçlar -->
+        <div>
+          <h4 style="font-size: 0.86rem; color: var(--accent-primary); margin-bottom: 8px; text-transform: uppercase;">
+            📌 Bu Belgedeki Ayraçlarınız
+          </h4>
+          <div class="list-container" id="currentDocBookmarksList"></div>
+        </div>
+
+        <!-- Son Okunan Belgeler (Hafıza) -->
+        <div style="border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+          <h4 style="font-size: 0.86rem; color: var(--accent-heading); margin-bottom: 8px; text-transform: uppercase;">
+            🕘 Son Okunan Kitaplar ve PDF Hafızası (Kaldığın Yerden Devam Et)
+          </h4>
+          <div class="list-container" id="recentDocsList"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" id="btnCloseBookmarksFooter">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 4: KİTAP ZEKASI (BAŞLIKLAR, DİPNOTLAR VE ATLANAN SAYFA RAPORU)
+       ======================================================================== -->
+  <div class="modal-backdrop hidden" id="structureModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-title">🧠 Kitap Zekası: Başlıklar, Dipnotlar ve Atlanan Bölümler</span>
+        <button class="btn" id="btnCloseStructure" style="padding: 4px 10px;">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="structureSummaryBox" style="font-size: 0.86rem; color: var(--text-secondary); line-height: 1.5;"></div>
+
+        <div>
+          <h4 style="font-size: 0.85rem; color: var(--accent-heading); margin-bottom: 8px; text-transform: uppercase;">
+            📑 Tespit Edilen Bölüm Başlıkları (Tıklayarak O Bölüme Atla)
+          </h4>
+          <div class="list-container" id="detectedHeadingsList"></div>
+        </div>
+
+        <div style="border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+          <h4 style="font-size: 0.85rem; color: var(--accent-footnote); margin-bottom: 8px; text-transform: uppercase;">
+            🧹 Sayfa ve Künye / Kaynakça Filtre Raporu
+          </h4>
+          <div class="list-container" id="pageFilterReportList"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" id="btnCloseStructureFooter">Tamam</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Uygulama Modülleri -->
+  <script src="js/storage.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
