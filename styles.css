@@ -45,15 +45,17 @@ body {
   user-select: none;
 }
 
-/* Zen Modu: Okuma aktifken dikkat dağıtan barları yumuşakça karart */
-body.is-reading .zen-fade {
-  opacity: 0.16;
-  transition: opacity 0.45s ease;
+/* Zen Modu: Okuma aktifken sadece okuma penceresi gözüksün, diğer tüm paneller tamamen gizlensin */
+.zen-fade,
+.banner-area {
+  transition: opacity 0.22s ease, visibility 0.22s ease;
 }
 
-body.is-reading .zen-fade:hover,
-body.is-reading .zen-fade:focus-within {
-  opacity: 1;
+body.is-reading .zen-fade,
+body.is-reading .banner-area {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 /* Ana Uygulama İskeleti */
@@ -785,6 +787,61 @@ body.is-reading .zen-fade:focus-within {
 .upload-dropzone.drag-over {
   background: rgba(250, 204, 21, 0.11);
   border-color: var(--accent-primary);
+}
+
+/* Online PDF & Haber / Web Sitesi Linki Çekme Kutusu */
+.url-fetch-box {
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.32);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.url-fetch-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.url-fetch-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #bae6fd;
+}
+
+.url-fetch-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.url-input-field {
+  flex: 1;
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.url-input-field:focus {
+  outline: none;
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+
+.url-fetch-hint {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
 }
 
 .textarea-content {

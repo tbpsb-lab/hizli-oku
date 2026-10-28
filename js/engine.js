@@ -114,6 +114,7 @@ class RSVPEngine {
           text: token.text,
           tokens: [token],
           type: 'heading',
+          isBookTitle: Boolean(token.isBookTitle),
           startWordIndex: token.index,
           endWordIndex: token.index,
           page: token.page || 1,

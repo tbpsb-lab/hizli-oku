@@ -172,6 +172,8 @@ class HizliOkuApp {
       btnCloseNewText: document.getElementById('btnCloseNewText'),
       btnCancelNewText: document.getElementById('btnCancelNewText'),
       btnApplyNewText: document.getElementById('btnApplyNewText'),
+      urlFetchInput: document.getElementById('urlFetchInput'),
+      btnFetchUrl: document.getElementById('btnFetchUrl'),
       pdfDropzone: document.getElementById('pdfDropzone'),
       pdfFileInput: document.getElementById('pdfFileInput'),
       chkForceOcr: document.getElementById('chkForceOcr'),
@@ -304,10 +306,17 @@ class HizliOkuApp {
       });
     });
 
-    // New Text / PDF Modal
+    // New Text / PDF / URL Modal
     this.el.btnCloseNewText.addEventListener('click', () => this.closeNewTextModal());
     this.el.btnCancelNewText.addEventListener('click', () => this.closeNewTextModal());
     this.el.btnApplyNewText.addEventListener('click', () => this.handlePasteTextSubmit());
+    this.el.btnFetchUrl.addEventListener('click', () => this.handleUrlFetch());
+    this.el.urlFetchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        this.handleUrlFetch();
+      }
+    });
     this.el.btnLoadSampleBook.addEventListener('click', () => {
       this.el.pasteTitleInput.value = 'Kuantum Yayınları - Zihnin Hızı ve Görsel Algı';
       this.el.pasteTextarea.value = SAMPLE_BOOK_TEXT;
@@ -423,18 +432,19 @@ class HizliOkuApp {
     if (lastHash) {
       const savedDoc = await window.storageManager.getDocumentState(lastHash);
       if (savedDoc && Array.isArray(savedDoc.tokens) && savedDoc.tokens.length > 0) {
+        const repairedTokens = window.smartBookParser.repairTokenList(savedDoc.tokens);
         this.currentDoc = {
           docHash: savedDoc.docHash,
           title: savedDoc.title,
           sourceType: savedDoc.sourceType,
-          tokens: savedDoc.tokens,
+          tokens: repairedTokens,
           pageSummaries: savedDoc.rawStructure ? savedDoc.rawStructure.pageSummaries : [],
           stats: savedDoc.rawStructure ? savedDoc.rawStructure.stats : {
             totalPages: savedDoc.totalPages || 1,
-            totalTokens: savedDoc.tokens.length,
+            totalTokens: repairedTokens.length,
             skippedPagesCount: 0,
-            headingsCount: savedDoc.tokens.filter((t) => t.type === 'heading').length,
-            footnotesCount: savedDoc.tokens.filter((t) => t.type === 'footnote-start').length
+            headingsCount: repairedTokens.filter((t) => t.type === 'heading').length,
+            footnotesCount: repairedTokens.filter((t) => t.type === 'footnote-start').length
           },
           bookmarks: savedDoc.bookmarks || []
         };
@@ -510,17 +520,24 @@ class HizliOkuApp {
    */
   async handlePdfFileUpload(file) {
     if (!file) return;
+    const forceOCR = Boolean(this.el.chkForceOcr && this.el.chkForceOcr.checked);
+    const arrayBuffer = await file.arrayBuffer();
+    await this.handlePdfBufferUpload(arrayBuffer, file.name, forceOCR);
+  }
+
+  /**
+   * Bir PDF ArrayBuffer'ını (yerel dosyadan veya internetteki bir URL'den) işler.
+   */
+  async handlePdfBufferUpload(arrayBuffer, fileName = 'Online PDF', forceOCR = false) {
     this.closeNewTextModal();
     this.engine.pause();
 
     try {
       this.el.ocrBanner.classList.remove('hidden');
-      this.el.ocrBannerText.textContent = `⏳ "${file.name}" parmak izi (SHA-256) kontrol ediliyor...`;
+      this.el.ocrBannerText.textContent = `⏳ "${fileName}" parmak izi (SHA-256) kontrol ediliyor...`;
 
-      const arrayBuffer = await file.arrayBuffer();
       const docHash = await window.storageManager.computeHash(arrayBuffer);
       const existingRecord = await window.storageManager.getDocumentState(docHash);
-      const forceOCR = Boolean(this.el.chkForceOcr && this.el.chkForceOcr.checked);
 
       const targetResumeWord = this._determineTargetResumeWord(existingRecord);
       let firstPageActivated = false;
@@ -544,7 +561,7 @@ class HizliOkuApp {
 
             this.currentDoc = {
               docHash,
-              title: file.name,
+              title: fileName,
               sourceType: usedOCR ? 'ocr-pdf' : 'pdf',
               tokens: partialBook.tokens,
               pageSummaries: partialBook.pageSummaries,
@@ -585,7 +602,7 @@ class HizliOkuApp {
 
       this.currentDoc = {
         docHash,
-        title: file.name,
+        title: fileName,
         sourceType: finalBook.usedOCR ? 'ocr-pdf' : 'pdf',
         tokens: finalBook.tokens,
         pageSummaries: finalBook.pageSummaries,
@@ -601,7 +618,7 @@ class HizliOkuApp {
 
       await window.storageManager.saveDocumentState({
         docHash,
-        title: file.name,
+        title: fileName,
         sourceType: this.currentDoc.sourceType,
         totalWords: finalBook.tokens.length,
         totalPages: finalBook.stats.totalPages,
@@ -693,10 +710,10 @@ class HizliOkuApp {
 
     this.el.readerPageCorner.textContent = `Sayfa ${chunk.page || 1} • Öbek ${chunkIdx + 1}/${totalChunks}`;
 
-    // 1. DURUM: BÖLÜM BAŞLIĞI (Özel Çerçeve, Farklı Renk ve Uzun Bekleme)
+    // 1. DURUM: BÖLÜM VEYA KİTAP BAŞLIĞI (Özel Çerçeve, Farklı Renk ve Uzun Bekleme)
     if (chunk.type === 'heading') {
       win.classList.add('mode-heading');
-      pill.textContent = '📑 BÖLÜM BAŞLIĞI';
+      pill.textContent = chunk.isBookTitle ? '📘 KİTAP BAŞLIĞI' : '📑 BÖLÜM BAŞLIĞI';
       pill.classList.remove('hidden');
       pill.classList.add('pill-heading');
 
@@ -738,7 +755,9 @@ class HizliOkuApp {
     }
 
     this.updateProgressUI();
-    this.renderContextPeek();
+    if (!this.engine.isPlaying) {
+      this.renderContextPeek();
+    }
     this._throttledSavePosition();
   }
 
@@ -800,12 +819,15 @@ class HizliOkuApp {
     this.el.btnPlayPauseIcon.textContent = isPlaying ? '⏸' : '▶';
     this.el.btnPlayPauseText.textContent = isPlaying ? 'DURAKLAT' : 'OKU';
 
-    if (!isPlaying && this.currentDoc.docHash) {
-      window.storageManager.updateReadingPosition(
-        this.currentDoc.docHash,
-        this.engine.getCurrentWordIndex(),
-        this.currentDoc.tokens.length
-      );
+    if (!isPlaying) {
+      this.renderContextPeek();
+      if (this.currentDoc.docHash) {
+        window.storageManager.updateReadingPosition(
+          this.currentDoc.docHash,
+          this.engine.getCurrentWordIndex(),
+          this.currentDoc.tokens.length
+        );
+      }
     }
   }
 
@@ -973,11 +995,12 @@ class HizliOkuApp {
         btn.addEventListener('click', async () => {
           const fullDoc = await window.storageManager.getDocumentState(btn.dataset.hash);
           if (fullDoc && Array.isArray(fullDoc.tokens) && fullDoc.tokens.length) {
+            const repairedTokens = window.smartBookParser.repairTokenList(fullDoc.tokens);
             this.currentDoc = {
               docHash: fullDoc.docHash,
               title: fullDoc.title,
               sourceType: fullDoc.sourceType,
-              tokens: fullDoc.tokens,
+              tokens: repairedTokens,
               pageSummaries: fullDoc.rawStructure ? fullDoc.rawStructure.pageSummaries : [],
               stats: fullDoc.rawStructure ? fullDoc.rawStructure.stats : {},
               bookmarks: fullDoc.bookmarks || []
@@ -1135,11 +1158,61 @@ class HizliOkuApp {
     const text = this.el.pasteTextarea.value.trim();
     const title = this.el.pasteTitleInput.value.trim();
     if (!text) {
-      alert('Lütfen okumak istediğiniz metni yapıştırın veya bir PDF dosyası seçin.');
+      alert('Lütfen okumak istediğiniz metni yapıştırın, bir PDF dosyası seçin veya bir link girin.');
       return;
     }
+
+    // Eğer kullanıcı metin kutusuna tek başına bir internet adresi (URL) yapıştırdıysa
+    // doğrudan akıllı link çekiciye yönlendir!
+    if (/^https?:\/\/[^\s]+$/i.test(text)) {
+      this.closeNewTextModal();
+      await this.handleUrlFetch(text, title);
+      return;
+    }
+
     this.closeNewTextModal();
     await this.loadPlainTextDocument(text, title || 'Yapıştırılan Metin');
+  }
+
+  /**
+   * Online PDF Linki veya Haber / Web Sitesi Linkini çeker, analiz eder ve okuyucuya aktarır.
+   */
+  async handleUrlFetch(customUrl = null, customTitle = null) {
+    const rawUrl = (customUrl || (this.el.urlFetchInput ? this.el.urlFetchInput.value : '')).trim();
+    if (!rawUrl) {
+      alert('Lütfen geçerli bir internet adresi (URL) yapıştırın.');
+      if (this.el.urlFetchInput) this.el.urlFetchInput.focus();
+      return;
+    }
+
+    this.closeNewTextModal();
+    this.engine.pause();
+
+    try {
+      this.el.ocrBanner.classList.remove('hidden');
+      this.el.ocrBannerText.textContent = '⏳ İnternet bağlantısı kuruluyor...';
+
+      const result = await window.smartBookParser.fetchUrlContent(rawUrl, (statusMsg) => {
+        this.el.ocrBanner.classList.remove('hidden');
+        this.el.ocrBannerText.textContent = statusMsg;
+      });
+
+      if (result.kind === 'pdf') {
+        const forceOCR = Boolean(this.el.chkForceOcr && this.el.chkForceOcr.checked);
+        await this.handlePdfBufferUpload(
+          result.arrayBuffer,
+          customTitle || result.title,
+          forceOCR
+        );
+      } else if (result.kind === 'article') {
+        this.el.ocrBanner.classList.add('hidden');
+        await this.loadPlainTextDocument(result.text, customTitle || result.title);
+      }
+    } catch (err) {
+      this.el.ocrBanner.classList.add('hidden');
+      console.error('URL Okuma Hatası:', err);
+      alert('Link çekilirken bir hata oluştu: ' + (err.message || err));
+    }
   }
 
   // ==========================================================================
