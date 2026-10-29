@@ -72,6 +72,7 @@ class HizliOkuApp {
     this.savePositionThrottleTimer = null;
     this._configurePdfWorker();
     this._cacheElements();
+    this.applyTheme(this.settings.theme || 'apple');
     this._bindEvents();
     this.applyVisualSettings();
     this._initInitialDocument();
@@ -277,6 +278,21 @@ class HizliOkuApp {
     this.el.btnCancelOcr.addEventListener('click', () => {
       window.smartBookParser.cancelActiveJob();
       this.el.ocrBanner.classList.add('hidden');
+    });
+
+    // Tasarım Teması Seçicileri (Header Segmented Control & Settings Modal Cards)
+    document.querySelectorAll('#headerThemeSelector .theme-seg-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.switchTheme(btn.dataset.themeVal);
+      });
+    });
+
+    document.querySelectorAll('#modalThemeSelector .theme-option-card').forEach((card) => {
+      card.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.switchTheme(card.dataset.themeVal);
+      });
     });
 
     // Settings Modal
@@ -863,8 +879,13 @@ class HizliOkuApp {
    */
   applyVisualSettings() {
     const root = document.documentElement;
-    root.style.setProperty('--reader-bg', this.settings.backgroundColor || '#000000');
-    root.style.setProperty('--reader-fg', this.settings.fontColor || '#ffff00');
+    const isKindle = this.settings.theme === 'kindle';
+    const isApple = !this.settings.theme || this.settings.theme === 'apple';
+    const fallbackBg = isKindle ? '#f9f4ea' : '#000000';
+    const fallbackFg = isKindle ? '#241c15' : (isApple ? '#f5f5f7' : '#ffff00');
+
+    root.style.setProperty('--reader-bg', this.settings.backgroundColor || fallbackBg);
+    root.style.setProperty('--reader-fg', this.settings.fontColor || fallbackFg);
     root.style.setProperty('--reader-width', `${this.settings.windowWidth || 750}px`);
     root.style.setProperty('--reader-height', `${this.settings.windowHeight || 500}px`);
     root.style.setProperty('--reader-font-size', `${this.settings.fontSize || 32}px`);
@@ -1022,12 +1043,83 @@ class HizliOkuApp {
   }
 
   // ==========================================================================
+  // TASARIM TEMALARI (APPLE / LINEAR / KINDLE)
+  // ==========================================================================
+
+  switchTheme(themeName) {
+    if (!['apple', 'linear', 'kindle'].includes(themeName)) return;
+
+    let defaultBg = '#000000';
+    let defaultFg = '#f5f5f7';
+
+    if (themeName === 'apple') {
+      defaultBg = '#000000';
+      defaultFg = '#f5f5f7';
+    } else if (themeName === 'linear') {
+      defaultBg = '#000000';
+      defaultFg = '#ffff00';
+    } else if (themeName === 'kindle') {
+      defaultBg = '#f9f4ea';
+      defaultFg = '#241c15';
+    }
+
+    const updated = {
+      theme: themeName,
+      backgroundColor: defaultBg,
+      fontColor: defaultFg
+    };
+
+    this.settings = window.storageManager.saveSettings(updated);
+    this.applyTheme(themeName);
+    this.applyVisualSettings();
+
+    if (this.el.setBgColor) this.el.setBgColor.value = defaultBg;
+    if (this.el.setFontColor) this.el.setFontColor.value = defaultFg;
+    this.updateSettingsLivePreview();
+
+    if (this.engine) {
+      this.engine.updateSettings(this.settings);
+      this.renderChunk(
+        this.engine.getCurrentChunk(),
+        this.engine.currentChunkIndex,
+        this.engine.chunks.length
+      );
+    }
+  }
+
+  applyTheme(themeName) {
+    const valid = ['apple', 'linear', 'kindle'].includes(themeName) ? themeName : 'apple';
+    document.documentElement.setAttribute('data-theme', valid);
+
+    // Mobil Durum Çubuğu (Status Bar) Rengini Güncelle
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeColorMeta) {
+      themeColorMeta.setAttribute('content', valid === 'kindle' ? '#f4ebd9' : (valid === 'linear' ? '#08090a' : '#0c0e14'));
+    }
+
+    // Header Segmented Kontrolü Senkronize Et
+    document.querySelectorAll('#headerThemeSelector .theme-seg-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.themeVal === valid);
+    });
+
+    // Ayarlar Modalı Kartlarını Senkronize Et
+    document.querySelectorAll('#modalThemeSelector .theme-option-card').forEach((card) => {
+      card.classList.toggle('active', card.dataset.themeVal === valid);
+    });
+  }
+
+  // ==========================================================================
   // SETTINGS MODAL (Yüklenen Görsel İle Birebir Uyumlu)
   // ==========================================================================
 
   openSettingsModal() {
     this.engine.pause();
     const s = this.settings;
+    const activeTheme = s.theme || 'apple';
+    document.querySelectorAll('#modalThemeSelector .theme-option-card').forEach((card) => {
+      card.classList.toggle('active', card.dataset.themeVal === activeTheme);
+    });
+
     this.el.setWpm.value = s.wpm;
     this.el.setChunkSize.value = s.chunkSize;
     this.el.setWindowWidth.value = s.windowWidth;
@@ -1082,13 +1174,14 @@ class HizliOkuApp {
     const prevFootnotes = this.settings.inlineFootnotes;
 
     const updated = {
+      theme: this.settings.theme || 'apple',
       wpm: Math.max(50, Math.min(2000, parseInt(this.el.setWpm.value, 10) || 325)),
       chunkSize: Math.max(1, Math.min(10, parseInt(this.el.setChunkSize.value, 10) || 3)),
       windowWidth: Math.max(280, Math.min(1800, parseInt(this.el.setWindowWidth.value, 10) || 750)),
       windowHeight: Math.max(180, Math.min(1200, parseInt(this.el.setWindowHeight.value, 10) || 500)),
       fontSize: Math.max(14, Math.min(96, parseInt(this.el.setFontSize.value, 10) || 32)),
-      fontColor: this.el.setFontColor.value || '#ffff00',
-      backgroundColor: this.el.setBgColor.value || '#000000',
+      fontColor: this.el.setFontColor.value || (this.settings.theme === 'kindle' ? '#241c15' : '#f5f5f7'),
+      backgroundColor: this.el.setBgColor.value || (this.settings.theme === 'kindle' ? '#f9f4ea' : '#000000'),
       alignment: this.el.setAlignment.value || 'center',
       speedVariability: this.el.setSpeedVariability.checked,
       sentenceBreak: this.el.setSentenceBreak.checked,

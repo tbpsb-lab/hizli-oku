@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <!-- PDF.js, Tesseract.js & Mozilla Readability (100% Tarayıcı İçi PDF, OCR ve Haber/Makale Ayıklama Motorları) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -35,6 +35,22 @@
       </div>
 
       <div class="top-actions">
+        <!-- Segmented Theme Selector (Apple / Linear / Kindle) -->
+        <div class="theme-segmented-control" id="headerThemeSelector" role="group" aria-label="Tasarım Teması">
+          <button type="button" class="theme-seg-btn active" data-theme-val="apple" title="Seçenek A: Apple / iOS Minimalizmi (Buzlu Cam, Mikro Gölgeler)">
+            <span class="theme-seg-icon">🍏</span>
+            <span class="theme-seg-text">Apple</span>
+          </button>
+          <button type="button" class="theme-seg-btn" data-theme-val="linear" title="Seçenek B: Linear / Raycast Estetiği (OLED Siyahı, Neon Vurgular)">
+            <span class="theme-seg-icon">⚡</span>
+            <span class="theme-seg-text">Linear</span>
+          </button>
+          <button type="button" class="theme-seg-btn" data-theme-val="kindle" title="Seçenek C: Kindle / E-Kitap Dokusu (Sıcak Sepia Kağıt, Editoryal Serif)">
+            <span class="theme-seg-icon">📖</span>
+            <span class="theme-seg-text">Kindle</span>
+          </button>
+        </div>
+
         <button class="btn" id="btnNewText" title="Yeni Metin Yapıştır, PDF Yükle veya Haber/PDF Linki Gir (Kısayol: n)">
           <span>📄 Yeni Metin / PDF / Link</span>
           <span class="kbd-hint">n</span>
@@ -210,9 +226,34 @@
         <button class="btn" id="btnCloseSettingsTop" style="padding: 4px 10px;">✕</button>
       </div>
       <div class="modal-body">
-        <!-- Hazır Renk Temaları -->
+        <!-- 3 Tasarım Teması Seçimi (Apple / Linear / Kindle) -->
+        <div class="settings-theme-section">
+          <div class="settings-section-title">🎨 Görünüm Teması (Design Theme)</div>
+          <div class="theme-cards-grid" id="modalThemeSelector">
+            <button type="button" class="theme-option-card active" data-theme-val="apple">
+              <div class="theme-card-badge">Varsayılan</div>
+              <div class="theme-card-icon">🍏</div>
+              <div class="theme-card-title">Apple / iOS Minimalizmi</div>
+              <div class="theme-card-desc">Buzlu camlar, yuvarlak hatlar, yumuşak mikro gölgeler ve San Francisco sadeliği.</div>
+            </button>
+            <button type="button" class="theme-option-card" data-theme-val="linear">
+              <div class="theme-card-badge">Power Tool</div>
+              <div class="theme-card-icon">⚡</div>
+              <div class="theme-card-title">Linear / Raycast Estetiği</div>
+              <div class="theme-card-desc">Koyu OLED siyahı, neon vurgular, ultra keskin 1px bordürler ve hacker/araç hissi.</div>
+            </button>
+            <button type="button" class="theme-option-card" data-theme-val="kindle">
+              <div class="theme-card-badge">Dingin Kağıt</div>
+              <div class="theme-card-icon">📖</div>
+              <div class="theme-card-title">Kindle / E-Kitap Dokusu</div>
+              <div class="theme-card-desc">Göz dinlendiren sepia kağıt tonları, editoryal serif tipografi ve dingin okuma keyfi.</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- İnce Renk İnce Ayarları -->
         <div class="theme-presets-row">
-          <span style="font-size: 0.8rem; color: var(--text-secondary);">Hazır Temalar:</span>
+          <span style="font-size: 0.8rem; color: var(--text-secondary);">Hızlı Renk Şablonu:</span>
           <button type="button" class="theme-chip" data-bg="#000000" data-fg="#ffff00" style="background:#000; color:#ffff00;">
             Accela Klasik (Sarı/Siyah)
           </button>

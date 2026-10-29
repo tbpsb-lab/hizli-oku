@@ -15,12 +15,13 @@ const DB_VERSION = 1;
 const STORE_DOCS = 'documents';
 
 const DEFAULT_SETTINGS = {
+  theme: 'apple', // 'apple' | 'linear' | 'kindle'
   wpm: 325,
   chunkSize: 3,
   windowWidth: 750,
   windowHeight: 500,
   fontSize: 32,
-  fontColor: '#ffff00',
+  fontColor: '#f5f5f7',
   backgroundColor: '#000000',
   alignment: 'center', // 'center' | 'left' | 'right' | 'orp'
   speedVariability: true,
